@@ -2,10 +2,11 @@ import pandas as pd
 import numpy as np
 import os
 
-PROJECT_ROOT = "C:\\Users\\bendb\\PycharmProjects\\FatHappy"
+from Utils import PROJECT_ROOT
 
 
 def general_data_df(path):
+    print("Generating monetary data frame...")
     columns_to_keep = ['state', 'state_ab', 'lat', 'lng', 'pop', 'male_pop', 'female_pop', 'rent_mean', 'rent_median', 'rent_stdev',
                        'rent_gt_10', 'rent_gt_20', 'rent_gt_30', 'rent_gt_40', 'rent_gt_50', 'hi_mean', 'hi_median',
                        'hi_stdev', 'family_mean', 'family_median', 'family_stdev', 'family_sample_weight',
@@ -48,6 +49,7 @@ def general_data_df(path):
 
 
 def get_physical_activities_df(path):
+    print("Generating physical activity data frame...")
     df = pd.read_csv(path, usecols=['LocationDesc', 'Data_Value'], error_bad_lines=False)
     df = df.rename(columns={'LocationDesc': 'state', 'Data_Value': 'physically_active'})
     df = df[df['physically_active'] != '~']
@@ -57,6 +59,7 @@ def get_physical_activities_df(path):
 
 
 def get_obesity_df(path):
+    print("Generating obesity data frame...")
     df = pd.read_csv(path, usecols=['LocationDesc', 'Data_Value'], error_bad_lines=False)
     df = df.rename(columns={'LocationDesc': 'state', 'Data_Value': 'obesity_percentage'})
     df = df[df['obesity_percentage'] != '~']
@@ -66,11 +69,13 @@ def get_obesity_df(path):
 
 
 def get_fastfood_df(path):
+    print("Generating fast food data frame...")
     df = pd.read_csv(path)
     return df
 
 
 def get_happiness_df(path):
+    print("Generating happiness data frame...")
     df = pd.read_csv(path, error_bad_lines=False, usecols=['State', 'totalScore'])
     df = df.rename(columns={'State': 'state'})
     return df
@@ -80,6 +85,8 @@ def get_big_dataframe(data_path):
     final_path = os.path.join(data_path, 'processed', 'dataset_v1.pkl')
     if os.path.isfile(final_path):
         return pd.read_pickle(final_path)
+
+    print("Dataframe not found, need to generate its components")
 
     raw_path = os.path.join(data_path, 'raw')
     general = general_data_df(os.path.join(raw_path, 'real_estate_db.csv')).set_index('state', drop=False)
