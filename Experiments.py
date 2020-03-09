@@ -1,5 +1,7 @@
 import os
 from itertools import islice
+import pickle
+import json
 
 import pandas as pd
 import numpy as np
@@ -13,7 +15,7 @@ from EffectComputations import ate_ipw, ate_magic, ate_match, ate_s, calculate_p
 
 
 LABEL_COLUMN = 'totalScore'
-TREATMENT_COLUMN = 'obesity'  # TODO: Decide on a name.
+TREATMENT_COLUMN = 'obesity_percentage'  # TODO: Decide on a name.
 IV_COL = 'pop_/n_re'
 
 ALL_ESTIMATORS = [ate_ipw, ate_magic, ate_match, ate_s]
@@ -25,8 +27,8 @@ DESIRED_EFFECTS = {'IV->T': (IV_COL, TREATMENT_COLUMN),
 def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, trimming_tolerance=0.0):
     results_index = [f"exp{version_num}_{estimator.__name__}" for estimator in ALL_ESTIMATORS]
 
-    results_df = pd.DataFrame(np.zeros(len(ALL_ESTIMATORS), len(DESIRED_EFFECTS)), index=results_index,
-                              columns=DESIRED_EFFECTS)
+    results_df = pd.DataFrame(np.zeros((len(ALL_ESTIMATORS), len(DESIRED_EFFECTS))), index=results_index,
+                              columns=DESIRED_EFFECTS, dtype=float)
 
     data_path = os.path.join(PROJECT_ROOT, 'data')
     eng_df = get_engineered_dataframe(data_path, f"engineered_exp{version_num}.csv", df, LABEL_COLUMN,
@@ -40,7 +42,7 @@ def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, t
     df = trim_for_overlap(df, TREATMENT_COLUMN, show_graphs=True, tolerance=trimming_tolerance)
     # TODO: enable skipping this experiment if common support trimming leaves me with too little samples.
 
-    results = map(lambda estimator: list(map(lambda _, pair: estimator(df, pair[0], pair[1]),
+    results = map(lambda estimator: list(map(lambda pair: estimator(df, pair[1][0], pair[1][1]),
                                              DESIRED_EFFECTS.items())),
                   ALL_ESTIMATORS)
 
@@ -67,9 +69,11 @@ def run_experiments(n_experiments, feature_set_size, min_clusters, max_clusters)
 
     idx2colname = {idx: colname for idx, colname in enumerate(big_df.columns)}
     exp_generator = generate_experiments(len(big_df.columns), feature_set_size, min_clusters, max_clusters, idx2colname)
-
+    experiment_configurations = {}
     results = None
     for params in tqdm(islice(exp_generator, n_experiments), desc='experiments', total=n_experiments, unit='exp'):
+        experiment_configurations[params['version_num']] = {'features': params['features'],
+                                                            'n_clusters': params['n_clusters']}
         result = _run_experiment(big_df, **params)
         if results is None:
             results = result
@@ -78,5 +82,11 @@ def run_experiments(n_experiments, feature_set_size, min_clusters, max_clusters)
 
         exp_name = f'{n_experiments}x{feature_set_size}_{min_clusters}-{max_clusters}.csv'
         results.to_csv(os.path.join(data_path, 'results', exp_name))
+        with open(os.path.join(data_path, 'results', f"{exp_name[:-4]}.config"), 'wb+') as f:
+            pickle.dump(json.dumps(experiment_configurations), f)
 
     return results
+
+
+if __name__ == "__main__":
+    run_experiments(2, feature_set_size=80, min_clusters=13, max_clusters=15)

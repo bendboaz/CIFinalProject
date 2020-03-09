@@ -59,7 +59,7 @@ def ate_match(df, treatment_col, outcome_col):
     control = df[df[treatment_col] == 0]
     t_predictor = KNeighborsRegressor(1)
     cols_to_drop = [treatment_col, outcome_col, "PS"]
-    t_predictor.fit(control.drop(cols_to_drop, axis=1), treated[outcome_col])
+    t_predictor.fit(treated.drop(cols_to_drop, axis=1), treated[outcome_col])
     c_predictor = KNeighborsRegressor(1)
     c_predictor.fit(control.drop(cols_to_drop, axis=1), control[outcome_col])
     f1 = df[outcome_col] * df[treatment_col] + \
@@ -78,7 +78,7 @@ def ate_magic(df, treatment_col, outcome_col):
     :param outcome_col:
     :return:
     """
-    cols_to_drop = [treatment_col, outcome_col]
+    cols_to_drop = [outcome_col]
     samples = df.drop(cols_to_drop, axis=1)
 
     predictor = Ridge(alpha=0.08, normalize=True, random_state=321)
