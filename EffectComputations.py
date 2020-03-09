@@ -35,7 +35,7 @@ def ate_ipw(df: pd.DataFrame, treatment_col, outcome_col):
     return (1 / n_samples) * (sigma_t - sigma_c)
 
 
-def att_s(df, treatment_col, outcome_col):
+def ate_s(df, treatment_col, outcome_col):
     samples = df.drop(["PS", outcome_col], axis=1)
     labels = df[outcome_col]
     predictor = Ridge(alpha=0.08, normalize=True, random_state=321)
@@ -54,7 +54,7 @@ def att_s(df, treatment_col, outcome_col):
     return np.mean(f1 - f0)
 
 
-def att_match(df, treatment_col, outcome_col):
+def ate_match(df, treatment_col, outcome_col):
     treated = df[df[treatment_col] == 1]
     control = df[df[treatment_col] == 0]
     t_predictor = KNeighborsRegressor(1)
@@ -69,11 +69,13 @@ def att_match(df, treatment_col, outcome_col):
     return np.mean(f1 - f0)
 
 
-def att_magic(df, treatment_col, outcome_col):
+def ate_magic(df, treatment_col, outcome_col):
     """
     Added propensity score to the s-learner covariates. Our approach:
     https://shir663.files.wordpress.com/2016/12/my-meme.jpg
     :param df:
+    :param treatment_col:
+    :param outcome_col:
     :return:
     """
     cols_to_drop = [treatment_col, outcome_col]
