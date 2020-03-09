@@ -48,13 +48,13 @@ def general_data_df(path):
 
 
 def get_cdc_df(path):
-    df = pd.read_csv(path, index_col='state', error_bad_lines=False)
-    content_columns = list(set(df.columns) - set('state'))
+    df = pd.read_csv(path, error_bad_lines=False)
+    content_columns = list(set(df.columns) - {'state'})
     for col in content_columns:
         df = df[df[col] != '~']
+        df = df.astype({colname: 'float' for colname in content_columns})
         df[col] = df[col].apply(lambda x: x / 100)
 
-    df = df.astype({colname: 'float' for colname in content_columns})
     return df
 
 
@@ -70,9 +70,9 @@ def get_happiness_df(path):
 
 
 def get_big_dataframe(data_path):
-    final_path = os.path.join(data_path, 'processed', 'dataset_v1.pkl')
+    final_path = os.path.join(data_path, 'processed', 'dataset_v1.csv')
     if os.path.isfile(final_path):
-        return pd.read_pickle(final_path)
+        return pd.read_csv(final_path)
 
     print("Dataframe not found, need to generate its components")
 
@@ -82,10 +82,10 @@ def get_big_dataframe(data_path):
     general = general_data_df(os.path.join(raw_path, 'real_estate_db.csv')).set_index('state', drop=False)
 
     print("Generating behaviour data frame...")
-    physical = get_cdc_df(os.path.join(raw_path, "active.csv")).set_index('state')
+    physical = get_cdc_df(os.path.join(raw_path, "behavior.csv")).set_index('state')
 
     print("Generating obesity data frame...")
-    obesity = get_cdc_df(os.path.join(raw_path, 'fat.csv')).set_index('state')
+    obesity = get_cdc_df(os.path.join(raw_path, 'obesity.csv')).set_index('state')
 
     print("Generating fast food data frame...")
     fastfood = get_fastfood_df(os.path.join(raw_path, 'fast_food.csv')).set_index('state_ab')
@@ -98,7 +98,7 @@ def get_big_dataframe(data_path):
     big_df = big_df.join(happiness, how='inner')
     big_df = big_df.set_index('state_ab').join(fastfood, how='inner')
     big_df = big_df.set_index('state')
-    big_df.to_pickle(final_path)
+    big_df.to_csv(final_path)
     return big_df
 
 
