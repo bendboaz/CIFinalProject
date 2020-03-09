@@ -6,7 +6,6 @@ from Utils import PROJECT_ROOT
 
 
 def general_data_df(path):
-    print("Generating monetary data frame...")
     columns_to_keep = ['state', 'state_ab', 'lat', 'lng', 'pop', 'male_pop', 'female_pop', 'rent_mean', 'rent_median', 'rent_stdev',
                        'rent_gt_10', 'rent_gt_20', 'rent_gt_30', 'rent_gt_40', 'rent_gt_50', 'hi_mean', 'hi_median',
                        'hi_stdev', 'family_mean', 'family_median', 'family_stdev', 'family_sample_weight',
@@ -42,40 +41,31 @@ def general_data_df(path):
     mi = df.columns
     ind = pd.Index([e[0] + "_" + e[1] for e in mi.tolist()])
     df.columns = ind
-    df = df.rename(columns={'state_': 'state', 'state_ab_':'state_ab'})
+    df = df.rename(columns={'state_': 'state', 'state_ab_': 'state_ab'})
     df = df.assign(state_ab=df['state'].apply(state2ab.__getitem__))
     # TODO: make the proportions correct
     return df
 
 
-def get_physical_activities_df(path):
-    print("Generating physical activity data frame...")
-    df = pd.read_csv(path, usecols=['LocationDesc', 'Data_Value'], error_bad_lines=False)
-    df = df.rename(columns={'LocationDesc': 'state', 'Data_Value': 'physically_active'})
+def get_cdc_df(path):
+    df = pd.read_csv(path, index_col='state', error_bad_lines=False)
+    content_columns = list(set(df.columns) - set('state'))
+    for col in content_columns:
+        df = df[df[col] != '~']
+        df[col] = df[col].apply(lambda x: x / 100)
+    df = df.astype({colname: 'float' for colname in content_columns})
     df = df[df['physically_active'] != '~']
     df = df.astype({'physically_active': 'float'})
     df['physically_active'] = df.physically_active.apply(lambda x: x / 100)
     return df
 
 
-def get_obesity_df(path):
-    print("Generating obesity data frame...")
-    df = pd.read_csv(path, usecols=['LocationDesc', 'Data_Value'], error_bad_lines=False)
-    df = df.rename(columns={'LocationDesc': 'state', 'Data_Value': 'obesity_percentage'})
-    df = df[df['obesity_percentage'] != '~']
-    df = df.astype({'obesity_percentage': 'float'})
-    df['obesity_percentage'] = df['obesity_percentage'].apply(lambda x: x / 100)
-    return df
-
-
 def get_fastfood_df(path):
-    print("Generating fast food data frame...")
     df = pd.read_csv(path)
     return df
 
 
 def get_happiness_df(path):
-    print("Generating happiness data frame...")
     df = pd.read_csv(path, error_bad_lines=False, usecols=['State', 'totalScore'])
     df = df.rename(columns={'State': 'state'})
     return df
@@ -89,11 +79,22 @@ def get_big_dataframe(data_path):
     print("Dataframe not found, need to generate its components")
 
     raw_path = os.path.join(data_path, 'raw')
+
+    print("Generating monetary data frame...")
     general = general_data_df(os.path.join(raw_path, 'real_estate_db.csv')).set_index('state', drop=False)
-    physical = get_physical_activities_df(os.path.join(raw_path, "active.csv")).set_index('state')
-    obesity = get_obesity_df(os.path.join(raw_path, 'fat.csv')).set_index('state')
+
+    print("Generating behaviour data frame...")
+    physical = get_cdc_df(os.path.join(raw_path, "active.csv")).set_index('state')
+
+    print("Generating obesity data frame...")
+    obesity = get_cdc_df(os.path.join(raw_path, 'fat.csv')).set_index('state')
+
+    print("Generating fast food data frame...")
     fastfood = get_fastfood_df(os.path.join(raw_path, 'fast_food.csv')).set_index('state_ab')
+
+    print("Generating happiness data frame...")
     happiness = get_happiness_df(os.path.join(raw_path, 'happiness.csv')).set_index('state')
+
     big_df = general.join(physical, how='inner')
     big_df = big_df.join(obesity, how='inner')
     big_df = big_df.join(happiness, how='inner')
