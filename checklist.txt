@@ -2,5 +2,5 @@ V - Binarization
 X - Check IV -> T effect
 X - Check IV -> Y effect
 X - Check different outcome (happiness) variables/cutoffs
-X - Check different treatment (obesity) variables/cutoffs
+V - Check different treatment (obesity) variables/cutoffs
 X - Check robustness over multiple estimators/cuts.

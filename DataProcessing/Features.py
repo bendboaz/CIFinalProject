@@ -28,7 +28,7 @@ def representative_features(df, label_column, idx2colname, necessary_features=No
         necessary_features = []
     features = necessary_features[:]
     corr_matrix = np.abs(df.corr().to_numpy())
-    feature_clusters, cluster_indices = get_feature_clusters(df, label_column, idx2colname, 13)
+    feature_clusters, cluster_indices = get_feature_clusters(df, label_column, idx2colname, 15)
     for cluster, indices in zip(feature_clusters, cluster_indices):
         sign_mask = np.ones(len(df.columns))
         for feature_ind in range(len(df.columns)):
@@ -45,10 +45,8 @@ def representative_features(df, label_column, idx2colname, necessary_features=No
 
 
 def convert_numeric_to_binary(df, features_list):
-    relevant_cols = df.loc[:, features_list]
-    medians = relevant_cols.median(axis=0)
-    for median, feature in zip(medians, features_list):
-        df.loc[:, feature] = (df[feature] >= median).astype(int)
+    for feature, percentile in features_list:
+        df.loc[:, feature] = (df[feature] >= df[feature].quantile(percentile)).astype(int)
     return df
 
 
@@ -59,8 +57,19 @@ def add_density_feature(df, top_label, bottom_label):
     return df, new_name
 
 
-def get_engineered_dataframe(data_path, label_column, cols_to_keep=None):
-    save_path = os.path.join(data_path, 'processed', 'engineered_v1.csv')
+def get_engineered_dataframe(data_path, dataset_name, label_column, label_percentile=0.5, cols_to_keep=None,
+                             cols_to_convert=None):
+    """
+
+    :param data_path: Path to the 'data' directory.
+    :param dataset_name: Name for the dataframe to be saved as.
+    :param label_column: Name of the label column.
+    :param label_percentile: Cutoff percentile for label column binarization.
+    :param cols_to_keep: List of column names to keep while clustering.
+    :param cols_to_convert: List of (colname, percentile) tuples.
+    :return:
+    """
+    save_path = os.path.join(data_path, 'processed', dataset_name)
     if os.path.isfile(save_path):
         df = pd.read_csv(save_path, index_col='state')
         return df
@@ -69,15 +78,20 @@ def get_engineered_dataframe(data_path, label_column, cols_to_keep=None):
     if cols_to_keep is None:
         cols_to_keep = []
 
+    if cols_to_convert is None:
+        cols_to_convert = []
+
     df = get_big_dataframe(data_path)
     idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
     df, density_col = add_density_feature(df, 'pop_sum', 'n_restaurants')
+
     cols_to_keep.append(density_col)
+    cols_to_convert.append((density_col, 0.5))
     features = representative_features(df.drop([label_column], axis=1), label_column, idx2colname,
                                        necessary_features=cols_to_keep)
     features.append(label_column)
     filtered_df = df.loc[:, features]
-    filtered_df = convert_numeric_to_binary(filtered_df, cols_to_keep + [label_column])
+    filtered_df = convert_numeric_to_binary(filtered_df, cols_to_convert + [(label_column, label_percentile)])
 
     scaler = MinMaxScaler()
     filtered_df[filtered_df.columns] = scaler.fit_transform(filtered_df[filtered_df.columns])
