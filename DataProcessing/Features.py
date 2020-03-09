@@ -21,14 +21,14 @@ def get_feature_clusters(df, label_column, idx2colname, n_clusters=13):
     return name_clusters, cluster_indices
 
 
-def representative_features(df, label_column, idx2colname, necessary_features=None):
+def representative_features(df, label_column, idx2colname, necessary_features=None, n_clusters=13):
     if label_column in df.columns:
         df = df.drop([label_column], axis=1)
     if necessary_features is None:
         necessary_features = []
     features = necessary_features[:]
     corr_matrix = np.abs(df.corr().to_numpy())
-    feature_clusters, cluster_indices = get_feature_clusters(df, label_column, idx2colname, 15)
+    feature_clusters, cluster_indices = get_feature_clusters(df, label_column, idx2colname, n_clusters)
     for cluster, indices in zip(feature_clusters, cluster_indices):
         sign_mask = np.ones(len(df.columns))
         for feature_ind in range(len(df.columns)):
@@ -57,16 +57,19 @@ def add_density_feature(df, top_label, bottom_label):
     return df, new_name
 
 
-def get_engineered_dataframe(data_path, dataset_name, label_column, label_percentile=0.5, cols_to_keep=None,
-                             cols_to_convert=None):
+def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, label_percentile=0.5, cols_to_keep=None,
+                             cols_to_convert=None, keep_features=None, n_clusters=13):
     """
 
     :param data_path: Path to the 'data' directory.
     :param dataset_name: Name for the dataframe to be saved as.
+    :param big_df: The dataframe containing all information (including labels, treatments and covariates).
     :param label_column: Name of the label column.
     :param label_percentile: Cutoff percentile for label column binarization.
     :param cols_to_keep: List of column names to keep while clustering.
     :param cols_to_convert: List of (colname, percentile) tuples.
+    :param keep_features: If not None, only use the mentioned features instead of the entire dataframe.
+    :param n_clusters: Number of clusters to use for dimensionality reduction.
     :return:
     """
     save_path = os.path.join(data_path, 'processed', dataset_name)
@@ -81,14 +84,17 @@ def get_engineered_dataframe(data_path, dataset_name, label_column, label_percen
     if cols_to_convert is None:
         cols_to_convert = []
 
-    df = get_big_dataframe(data_path)
+    df = big_df
+    if keep_features is not None:
+        df = df[list(set(keep_features) | set(cols_to_keep) | {'pop_sum', 'n_restaurants', label_column})]
+
     idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
     df, density_col = add_density_feature(df, 'pop_sum', 'n_restaurants')
 
     cols_to_keep.append(density_col)
     cols_to_convert.append((density_col, 0.5))
     features = representative_features(df.drop([label_column], axis=1), label_column, idx2colname,
-                                       necessary_features=cols_to_keep)
+                                       necessary_features=cols_to_keep, n_clusters=n_clusters)
     features.append(label_column)
     filtered_df = df.loc[:, features]
     filtered_df = convert_numeric_to_binary(filtered_df, cols_to_convert + [(label_column, label_percentile)])
