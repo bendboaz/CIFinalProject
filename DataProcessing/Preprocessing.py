@@ -53,10 +53,8 @@ def get_cdc_df(path):
     for col in content_columns:
         df = df[df[col] != '~']
         df[col] = df[col].apply(lambda x: x / 100)
+
     df = df.astype({colname: 'float' for colname in content_columns})
-    df = df[df['physically_active'] != '~']
-    df = df.astype({'physically_active': 'float'})
-    df['physically_active'] = df.physically_active.apply(lambda x: x / 100)
     return df
 
 
