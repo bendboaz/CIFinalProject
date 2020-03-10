@@ -35,7 +35,7 @@ def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, t
                                       cols_to_keep=[LABEL_COLUMN, TREATMENT_COLUMN],
                                       cols_to_convert=[(TREATMENT_COLUMN, obesity_cutoff)],
                                       keep_features=features,
-                                      n_clusters=n_clusters)
+                                      n_clusters=n_clusters, flag_must_create_new_file=True)
 
     df = calculate_propensity(eng_df, TREATMENT_COLUMN, LABEL_COLUMN, LogisticRegression,
                               random_state=346, solver='lbfgs')

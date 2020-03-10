@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-PROJECT_ROOT = "C:\\Users\\bendb\\PycharmProjects\\FatHappy"
+PROJECT_ROOT = "C:\\Users\\boazb\\PycharmProjects\\FatHappy"
 
 
 def overlap_graph(control, treated):
@@ -29,3 +29,5 @@ def trim_for_overlap(df: pd.DataFrame, treatment_label, show_graphs=False, toler
     if show_graphs:
         overlap_graph(trimmed_control, trimmed_treated)
     return trimmed_dataset
+
+

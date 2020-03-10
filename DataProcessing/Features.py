@@ -21,13 +21,14 @@ def get_feature_clusters(df, label_column, idx2colname, n_clusters=13):
     return name_clusters, cluster_indices
 
 
-def representative_features(df, label_column, idx2colname, necessary_features=None, n_clusters=13):
+def representative_features(df, label_column, necessary_features=None, n_clusters=13):
     if label_column in df.columns:
         df = df.drop([label_column], axis=1)
     if necessary_features is None:
         necessary_features = []
     features = necessary_features[:]
     corr_matrix = np.abs(df.corr().to_numpy())
+    idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
     feature_clusters, cluster_indices = get_feature_clusters(df, label_column, idx2colname, n_clusters)
     for cluster, indices in zip(feature_clusters, cluster_indices):
         sign_mask = np.ones(len(df.columns))
@@ -38,8 +39,8 @@ def representative_features(df, label_column, idx2colname, necessary_features=No
         cluster_elements = corr_matrix[:, indices]
         scores = np.dot(sign_mask, cluster_elements)
         chosen_feature = np.argmax(scores)
-        if chosen_feature not in necessary_features:
-            features.append(df.columns[indices[chosen_feature]])
+        if idx2colname[chosen_feature] not in features:
+            features.append(idx2colname[chosen_feature])
 
     return features
 
@@ -58,9 +59,8 @@ def add_density_feature(df, top_label, bottom_label):
 
 
 def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, label_percentile=0.5, cols_to_keep=None,
-                             cols_to_convert=None, keep_features=None, n_clusters=13):
+                             cols_to_convert=None, keep_features=None, n_clusters=13, flag_must_create_new_file=False):
     """
-
     :param data_path: Path to the 'data' directory.
     :param dataset_name: Name for the dataframe to be saved as.
     :param big_df: The dataframe containing all information (including labels, treatments and covariates).
@@ -70,10 +70,11 @@ def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, labe
     :param cols_to_convert: List of (colname, percentile) tuples.
     :param keep_features: If not None, only use the mentioned features instead of the entire dataframe.
     :param n_clusters: Number of clusters to use for dimensionality reduction.
+    :param flag_must_create_new_file: flag if the func called from the experiments, we have to create new df
     :return:
     """
     save_path = os.path.join(data_path, 'processed', dataset_name)
-    if os.path.isfile(save_path):
+    if os.path.isfile(save_path) and not flag_must_create_new_file:
         df = pd.read_csv(save_path, index_col='state')
         return df
 
@@ -86,16 +87,16 @@ def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, labe
 
     df = big_df
     if keep_features is not None:
-        df = df[list(set(keep_features) | set(cols_to_keep) | {'pop_sum', 'n_restaurants', label_column})]
+        df = df[list(set(set(keep_features) | set(cols_to_keep) | {'pop_sum', 'n_restaurants', label_column} | {'state'}))]
 
-    idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
     df, density_col = add_density_feature(df, 'pop_sum', 'n_restaurants')
     df = df.set_index('state')
     cols_to_keep.append(density_col)
     cols_to_convert.append((density_col, 0.5))
-    features = representative_features(df.drop([label_column], axis=1), label_column, idx2colname,
+    idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
+    features = representative_features(df.drop([label_column], axis=1), label_column,
                                        necessary_features=cols_to_keep, n_clusters=n_clusters)
-    features.append(label_column)
+    # features.append(label_column)
     filtered_df = df.loc[:, features]
     filtered_df = convert_numeric_to_binary(filtered_df, cols_to_convert + [(label_column, label_percentile)])
 
