@@ -39,8 +39,8 @@ def representative_features(df, label_column, necessary_features=None, n_cluster
         cluster_elements = corr_matrix[:, indices]
         scores = np.dot(sign_mask, cluster_elements)
         chosen_feature = np.argmax(scores)
-        if idx2colname[chosen_feature] not in features:
-            features.append(idx2colname[chosen_feature])
+        if idx2colname[indices[chosen_feature]] not in features:
+            features.append(idx2colname[indices[chosen_feature]])
 
     return features
 
