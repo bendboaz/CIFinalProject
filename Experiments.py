@@ -40,7 +40,7 @@ def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, t
 
     # Check to see if the chosen features are indicative enough.
     classifier_score = check_indicative_features(eng_df, LABEL_COLUMN)
-    if classifier_score < 0.7:
+    if classifier_score < 0.5:
         # print(f"Experiment {version_num}: Features not indicative enough, skip experiment.")
         return None
 

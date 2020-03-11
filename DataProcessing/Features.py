@@ -101,7 +101,7 @@ def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, labe
                                        necessary_features=cols_to_keep, n_clusters=n_clusters)
     # features.append(label_column)
     filtered_df = df.loc[:, features]
-    filtered_df = convert_numeric_to_binary(filtered_df, cols_to_convert + [(label_column, label_percentile)])
+    filtered_df = convert_numeric_to_binary(filtered_df, cols_to_convert)
 
     scaler = MinMaxScaler()
     filtered_df[filtered_df.columns] = scaler.fit_transform(filtered_df[filtered_df.columns])
