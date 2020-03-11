@@ -41,7 +41,7 @@ def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, t
     # Check to see if the chosen features are indicative enough.
     classifier_score = check_indicative_features(eng_df, LABEL_COLUMN)
     if classifier_score < 0.7:
-        # Features not indicative enough, skip experiment.
+        # print(f"Experiment {version_num}: Features not indicative enough, skip experiment.")
         return None
 
     df = calculate_propensity(eng_df, TREATMENT_COLUMN, LABEL_COLUMN, LogisticRegression,
@@ -52,7 +52,7 @@ def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, t
     c_post, t_post = df[TREATMENT_COLUMN].value_counts().sort_index(ascending=True)
 
     if c_post < (c_pre / 2) or t_post < (t_pre / 2):
-        # Skipping experiment
+        # print(f"Experiment {version_num}: Not enough samples after trimming, skip experiment")
         return None
 
     results = map(lambda estimator: list(map(lambda pair: estimator(df, pair[1][0], pair[1][1]),
