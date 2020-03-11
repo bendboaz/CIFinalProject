@@ -78,7 +78,7 @@ def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, labe
         df = pd.read_csv(save_path, index_col='state')
         return df
 
-    print("Dataframe not found, generating it...")
+    # print("Dataframe not found, generating it...")
     if cols_to_keep is None:
         cols_to_keep = []
 
@@ -87,13 +87,16 @@ def get_engineered_dataframe(data_path, dataset_name, big_df, label_column, labe
 
     df = big_df
     if keep_features is not None:
-        df = df[list(set(set(keep_features) | set(cols_to_keep) | {'pop_sum', 'n_restaurants', label_column} | {'state'}))]
+        indices = list(set(set(keep_features) |
+                           set(cols_to_keep) |
+                           {'pop_sum', 'n_restaurants', label_column, 'state'}))
+        df = df.loc[:, indices]
 
     df, density_col = add_density_feature(df, 'pop_sum', 'n_restaurants')
     df = df.set_index('state')
     cols_to_keep.append(density_col)
     cols_to_convert.append((density_col, 0.5))
-    idx2colname = {idx: colname for idx, colname in enumerate(df.columns)}
+
     features = representative_features(df.drop([label_column], axis=1), label_column,
                                        necessary_features=cols_to_keep, n_clusters=n_clusters)
     # features.append(label_column)
