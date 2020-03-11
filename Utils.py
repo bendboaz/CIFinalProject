@@ -1,6 +1,6 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 
@@ -34,8 +34,8 @@ def trim_for_overlap(df: pd.DataFrame, treatment_label, show_graphs=False, toler
 
 
 def check_indicative_features(df, label_column):
-    classifier = RandomForestClassifier(n_estimators=15, max_depth=4)
+    classifier = RandomForestRegressor(n_estimators=15, max_depth=4)
     X_train, X_test, y_train, y_test = train_test_split(df.drop([label_column], axis=1), df[label_column],
-                                                        train_size=0.8, random_state=321, stratify=df[label_column])
+                                                        train_size=0.8, random_state=321)
     classifier.fit(X_train, y_train)
     return classifier.score(X_test, y_test)
