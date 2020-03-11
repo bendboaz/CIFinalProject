@@ -57,15 +57,17 @@ def ate_s(df, treatment_col, outcome_col):
 def ate_match(df, treatment_col, outcome_col):
     treated = df[df[treatment_col] == 1]
     control = df[df[treatment_col] == 0]
-    t_predictor = KNeighborsRegressor(1)
     cols_to_drop = [treatment_col, outcome_col, "PS"]
+
+    t_predictor = KNeighborsRegressor(1)
     t_predictor.fit(treated.drop(cols_to_drop, axis=1), treated[outcome_col])
     c_predictor = KNeighborsRegressor(1)
     c_predictor.fit(control.drop(cols_to_drop, axis=1), control[outcome_col])
+
     f1 = df[outcome_col] * df[treatment_col] + \
-        c_predictor.predict(df.drop(cols_to_drop, axis=1)) * (1 - df[treatment_col])
+        t_predictor.predict(df.drop(cols_to_drop, axis=1)) * (1 - df[treatment_col])
     f0 = df[outcome_col] * (1 - df[treatment_col]) + \
-        t_predictor.predict(df.drop(cols_to_drop, axis=1)) * df[treatment_col]
+        c_predictor.predict(df.drop(cols_to_drop, axis=1)) * df[treatment_col]
     return np.mean(f1 - f0)
 
 
