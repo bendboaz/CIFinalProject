@@ -12,10 +12,15 @@ from DataProcessing.Features import get_engineered_dataframe
 from EffectComputations import calculate_propensity
 
 
-def show_correlation_matrix(df: pd.DataFrame):
+def show_correlation_matrix(df: pd.DataFrame, do_abs=False, save_path=None):
     print("Correlation matrix:")
     corr_matrix = df.corr()
+    if do_abs:
+        corr_matrix = np.abs(corr_matrix)
     plt.matshow(corr_matrix)
+    plt.colorbar()
+    if save_path is not None:
+        plt.savefig(save_path)
     plt.show()
     return corr_matrix
 
@@ -25,7 +30,7 @@ def show_histogram(df: pd.DataFrame, column):
     plt.show()
 
 
-def show_obesity_cutoff_graphs(data_path, outcome_column, treatment_column, tolerance):
+def show_obesity_cutoff_graphs(data_path, big_df, outcome_column, treatment_column, tolerance):
     """
     Shows state histogram before/after PS trimming, for obesity cutoffs at 25%/50%/75%
     :param data_path:
@@ -34,14 +39,14 @@ def show_obesity_cutoff_graphs(data_path, outcome_column, treatment_column, tole
     :param tolerance:
     :return:
     """
-    df_025 = get_engineered_dataframe(data_path, 'engineered_025.csv', outcome_column,
-                                      cols_to_keep=[treatment_column],
+    df_025 = get_engineered_dataframe(data_path, 'engineered_025.csv', big_df, outcome_column,
+                                      cols_to_keep=[outcome_column, treatment_column],
                                       cols_to_convert=[(treatment_column, 0.25)])
-    df_05 = get_engineered_dataframe(data_path, 'engineered_05.csv', outcome_column,
-                                     cols_to_keep=[treatment_column],
+    df_05 = get_engineered_dataframe(data_path, 'engineered_05.csv', big_df, outcome_column,
+                                     cols_to_keep=[outcome_column, treatment_column],
                                      cols_to_convert=[(treatment_column, 0.5)])
-    df_075 = get_engineered_dataframe(data_path, 'engineered_075.csv', outcome_column,
-                                      cols_to_keep=[treatment_column],
+    df_075 = get_engineered_dataframe(data_path, 'engineered_075.csv', big_df, outcome_column,
+                                      cols_to_keep=[outcome_column, treatment_column],
                                       cols_to_convert=[(treatment_column, 0.75)])
 
     df_025 = calculate_propensity(df_025, treatment_column, outcome_column, LogisticRegression,
@@ -59,6 +64,10 @@ def show_obesity_cutoff_graphs(data_path, outcome_column, treatment_column, tole
 
 if __name__ == "__main__":
     data_path = os.path.join(PROJECT_ROOT, 'data')
+    big_df = get_big_dataframe(data_path)
     outcome_column = 'totalScore'
     treatment_column = 'obesity_percentage'
-    show_obesity_cutoff_graphs(data_path, outcome_column, treatment_column, 0.05)
+
+    # show_correlation_matrix(big_df.drop([outcome_column, treatment_column], axis=1), do_abs=True,
+    #                         save_path=os.path.join(data_path, 'results', 'abs_corr_matrix.jpg'))
+    show_obesity_cutoff_graphs(data_path, big_df, outcome_column, treatment_column, 0.05)
