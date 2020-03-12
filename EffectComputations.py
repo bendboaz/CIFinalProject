@@ -14,7 +14,7 @@ def calculate_propensity(dataset: pd.DataFrame, treatment_col, outcome_col, clas
         dataset = dataset.drop(to_remove, axis=1)
     
     predictor = classifier_cls(**classifier_params)
-    samples = dataset.drop([treatment_col, outcome_col], axis=1)
+    samples = dataset.drop(set(dataset.columns).intersection({treatment_col, outcome_col}), axis=1)
     labels = dataset[treatment_col]
     predictor.fit(samples, labels)
     propensity_scores = predictor.predict_proba(samples.to_numpy())
