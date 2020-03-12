@@ -5,8 +5,6 @@ import json
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from DataProcessing.Preprocessing import get_big_dataframe
@@ -20,9 +18,13 @@ TREATMENT_COLUMN = 'obesity_percentage'  # TODO: Decide on a name.
 IV_COL = 'pop_/n_re'
 
 ALL_ESTIMATORS = [ate_ipw, ate_magic, ate_match, ate_s]
-DESIRED_EFFECTS = {'IV->T': (IV_COL, TREATMENT_COLUMN),
-                   'IV->Y': (IV_COL, LABEL_COLUMN),
-                   'T->Y': (TREATMENT_COLUMN, LABEL_COLUMN)}
+
+# Old experiments:
+# DESIRED_EFFECTS = {'IV->T': (IV_COL, TREATMENT_COLUMN),
+#                    'IV->Y': (IV_COL, LABEL_COLUMN),
+#                    'T->Y': (TREATMENT_COLUMN, LABEL_COLUMN)}
+
+DESIRED_EFFECTS = {'T->Y': (TREATMENT_COLUMN, LABEL_COLUMN)}
 
 
 def _run_experiment(df, version_num, features, n_clusters, obesity_cutoff=0.5, trimming_tolerance=0.0):

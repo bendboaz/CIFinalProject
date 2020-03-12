@@ -7,6 +7,7 @@ import numpy as np
 from scipy import stats
 
 from DataProcessing.Preprocessing import get_big_dataframe
+from DataProcessing.Features import get_engineered_dataframe
 from Utils import PROJECT_ROOT
 from Experiments import _run_experiment
 
@@ -45,14 +46,39 @@ def get_est_name(row, regex):
     return re.match(regex, row).group(1)
 
 
+def compute_iv_sem_estimate(eng_df, label_col, treatment_col, iv_col):
+    iv_cov_label = eng_df[iv_col].cov(eng_df[label_col])
+    iv_cov_treatment = eng_df[iv_col].cov(eng_df[treatment_col])
+    return iv_cov_label / iv_cov_treatment
+
+
+def compute_iv_constant_estimate(eng_df, label_col, treatment_col, iv_col):
+    (zero, with_iv), (one, without_iv) = eng_df.groupby(by=iv_col)
+    assert zero == 0.0 and one == 1
+    iv_on_label = with_iv[label_col].mean() - without_iv[label_col].mean()
+    iv_on_treatment = with_iv[treatment_col].mean() - without_iv[treatment_col].mean()
+    return iv_on_label / iv_on_treatment
+
+
 if __name__ == "__main__":
-    results_name = '10000x80_13-15_binary.csv'
+    results_name = '10000x80_13-15.csv'
     result_path = os.path.join(PROJECT_ROOT, 'data', 'results', results_name)
     results = read_csv(result_path)
     results = results.rename({results.columns[0]: 'Description'}, axis='columns')
     all_aggregations = aggregate_estimators(results)
     all_aggregations['total'] = aggregate_experiments(results.drop(['est_name'], axis=1))
 
-    final_df = pd.concat(all_aggregations).to_latex()
+    final_df = pd.concat(all_aggregations)['T->Y']
     print(final_df)
+
+    data_path = os.path.join(PROJECT_ROOT, 'data')
+    big_df = get_big_dataframe(data_path)
+
+    label_col = 'totalScore'
+    treatment_col = 'obesity_percentage'
+    eng_df = get_engineered_dataframe(data_path, 'all_states', big_df, 'totalScore',
+                                      cols_to_keep=[label_col, treatment_col], cols_to_convert=[(treatment_col, 0.5)])
+    iv_col = 'pop_/n_re'
+    print(compute_iv_sem_estimate(eng_df, label_col, treatment_col, iv_col))
+    print(compute_iv_constant_estimate(eng_df, label_col, treatment_col, iv_col))
 

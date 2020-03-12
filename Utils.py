@@ -35,7 +35,8 @@ def trim_for_overlap(df: pd.DataFrame, treatment_label, show_graphs=False, toler
 
 def check_indicative_features(df, label_column):
     classifier = RandomForestRegressor(n_estimators=15, max_depth=4)
-    X_train, X_test, y_train, y_test = train_test_split(df.drop([label_column], axis=1), df[label_column],
+    X_train, X_test, y_train, y_test = train_test_split(df.drop([label_column], axis=1).to_numpy(),
+                                                        df[label_column].to_numpy(),
                                                         train_size=0.8, random_state=321)
     classifier.fit(X_train, y_train)
     return classifier.score(X_test, y_test)
