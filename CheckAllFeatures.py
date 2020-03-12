@@ -68,8 +68,9 @@ if __name__ == "__main__":
     all_aggregations = aggregate_estimators(results)
     all_aggregations['total'] = aggregate_experiments(results.drop(['est_name'], axis=1))
 
-    final_df = pd.concat(all_aggregations)['T->Y']
-    print(final_df)
+    final_df = pd.concat(all_aggregations).unstack()
+    print(final_df['T->Y'].transpose().to_latex())
+    print(final_df['IV->T'].transpose().to_latex())
 
     data_path = os.path.join(PROJECT_ROOT, 'data')
     big_df = get_big_dataframe(data_path)
